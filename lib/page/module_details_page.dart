@@ -49,7 +49,8 @@ class ModuleDetailsPage extends StatelessWidget {
             ),
             Text(
               "About : ${service.notes}",
-              style: TextStyle(color: Colors.black),
+              textAlign: TextAlign.justify,
+              style: TextStyle(color: Colors.black,fontWeight: FontWeight.w500),
             )
           ],
         ),

@@ -227,24 +227,34 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
   void _apiZone(){
     setState(() {
       isLoading = true;
+      status = loader();
     });
     GetZoneRepo.fetchData(
         onSuccess: (object) {
           if (object.flag == 1) {
             zones = object.data;
+            setState(() {
+              isLoading = false;
+            });
           } else {
             errorToast(object.message);
-
+            setState(() {
+              status = errorView(
+                  callBack: (){
+                    _apiZone();
+                  }
+              );
+            });
           }
-          setState(() {
-            isLoading = false;
-          });
         },
         onError: (error) {
-          errorToast("Error on getting data");
           print("get zone data api fail === > $error");
           setState(() {
-            isLoading = false;
+            status = errorView(
+                callBack: (){
+                  _apiZone();
+                }
+            );
           });
         });
   }

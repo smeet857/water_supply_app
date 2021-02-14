@@ -160,7 +160,7 @@ class _EnquiryPageState extends State<EnquiryPage> {
           Navigator.pop(context);
           if(response.flag == 1){
             toast("Success");
-            Navigator.pop(context);
+            Navigator.pop(context,true);
           }
         },
         onError: (error){

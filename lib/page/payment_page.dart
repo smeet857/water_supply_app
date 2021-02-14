@@ -78,6 +78,7 @@ class _PaymentPageState extends State<PaymentPage> {
     print("Token ====> ${user.token}");
     setState(() {
       _isLoading = true;
+      _status = loader();
     });
     UserPaymentHistoryRepo.fetchData(
         buyerId: user.id,
@@ -95,9 +96,14 @@ class _PaymentPageState extends State<PaymentPage> {
           });
         },
         onError: (error) {
-          errorToast("Something went Wrong");
+          setState(() {
+            _status = errorView(
+                callBack: (){
+                  apiGetPayment();
+                }
+            );
+          });
           print("get payment data api fail === > $error");
-          setState(() {});
         });
   }
 

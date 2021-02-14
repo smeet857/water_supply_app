@@ -46,10 +46,6 @@ class _UserPageState extends State<UserPage> {
         child: SfCalendar(
           view: CalendarView.month,
           dataSource: MeetingDataSource(_getDataSource()),
-          appointmentBuilder: (c,ca){
-
-            return CircleAvatar(backgroundColor: Colors.blue,radius: 15,);
-          },
           monthViewSettings: MonthViewSettings(showAgenda: true,
               appointmentDisplayMode: MonthAppointmentDisplayMode.appointment),
         ),
@@ -60,6 +56,7 @@ class _UserPageState extends State<UserPage> {
   void _apiOrder(){
     setState(() {
       isLoading = true;
+      status = loader();
     });
     GetUserDataRepo.fetchData(
         token: user.token,
@@ -67,19 +64,33 @@ class _UserPageState extends State<UserPage> {
           if (object.flag == 1) {
             user = object.data;
             orders = user.history.orders;
+            setState(() {
+              isLoading = false;
+            });
           } else {
             errorToast(object.message);
+            setState(() {
+              status = errorView(
+                  callBack: (){
+                    _apiOrder();
+                  }
+              );
+            });
           }
-          setState(() {
-            isLoading = false;
-          });
         },
         onError: (error) {
-          errorToast("Error on getting order");
+          errorToast("Error on getting data");
           print("get user data api fail === > $error");
           setState(() {
             isLoading = false;
           });
+          // setState(() {
+          //   status = errorView(
+          //       callBack: (){
+          //         _apiOrder();
+          //       }
+          //   );
+          // });
         });
   }
   List<Meeting> _getDataSource() {

@@ -1,5 +1,7 @@
 
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
+import 'package:water_supply_app/dialog/enquiry_dialog.dart';
 import 'package:water_supply_app/model/content.dart';
 import 'package:water_supply_app/model/services.dart';
 import 'package:water_supply_app/page/delivery_home_page.dart';
@@ -13,6 +15,7 @@ import 'package:water_supply_app/util/constants.dart';
 import 'package:water_supply_app/util/functions.dart';
 import 'package:water_supply_app/util/my_colors.dart';
 import 'package:water_supply_app/util/view_function.dart';
+import 'package:water_supply_app/video_player/vlc_video_player.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -98,11 +101,14 @@ class _HomePageState extends State<HomePage> {
   Widget _buildMediaPage(int index , Content content) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 15),
-      padding: EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: index % 2 == 0 ? Colors.pink : Colors.cyan,
+        borderRadius: BorderRadius.circular(5),
+        color:Colors.black,
+        border: Border.all(color: Colors.blue,width: 2)
       ),
+      child: ClipRRect(
+          borderRadius: BorderRadius.circular(5),
+          child: VPlayer(url: content.fileUpload,)),
     );
   }
 
@@ -174,6 +180,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _apiContent(){
+    setState(() {
+      _isLoading = true;
+      _status = loader();
+    });
     ContentRepo.fetchData(
         onSuccess: (response){
           if(response.flag == 1){
@@ -182,10 +192,14 @@ class _HomePageState extends State<HomePage> {
           }
         },
         onError: (error){
-          errorToast("Content Api Error : $error");
           setState(() {
-            _isLoading = false;
+            _status = errorView(
+                callBack: (){
+                  _apiContent();
+                }
+            );
           });
+          print("Error ====> $error");
         }
     );
   }
@@ -197,12 +211,24 @@ class _HomePageState extends State<HomePage> {
             setState(() {
               _isLoading = false;
             });
+          }else{
+            setState(() {
+              _status = errorView(
+                  callBack: (){
+                    _apiContent();
+                  }
+              );
+            });
           }
         },
         onError: (error){
-          errorToast("Service Api Error : $error");
+          print("get service api error ===> $error");
           setState(() {
-            _isLoading = false;
+            _status = errorView(
+                callBack: (){
+                  _apiContent();
+                }
+            );
           });
         }
     );
@@ -234,7 +260,11 @@ class _HomePageState extends State<HomePage> {
   void _onEnquiryTap() {
     Navigator.push(context, MaterialPageRoute(
         builder: (BuildContext context) => EnquiryPage()
-    ));
+    )).then((value){
+      if(value != null && value){
+        showDialog(context: context,builder: (context) => EnquiryDialog());
+      }
+    });
   }
   void _onModuleTap(String title){
     Services service = title == "Alkaline Water" ? _serviceData[0] : _serviceData[1];
