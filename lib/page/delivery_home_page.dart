@@ -234,6 +234,7 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
             zones = object.data;
           } else {
             errorToast(object.message);
+
           }
           setState(() {
             isLoading = false;
