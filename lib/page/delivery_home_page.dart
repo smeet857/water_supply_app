@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:water_supply_app/model/zone_details.dart';
 import 'package:water_supply_app/page/setting_page.dart';
+import 'package:water_supply_app/repo/delivered_order_repo.dart';
 import 'package:water_supply_app/repo/get_user_data_repo.dart';
 import 'package:water_supply_app/repo/zone_repo.dart';
 import 'package:water_supply_app/util/constants.dart';
@@ -15,24 +16,33 @@ class DeliveryHomePage extends StatefulWidget {
 
 class _DeliveryHomePageState extends State<DeliveryHomePage> {
 
-  TextEditingController _cityController = TextEditingController();
-  TextEditingController _societyController = TextEditingController();
-  TextEditingController _customerController = TextEditingController();
   TextEditingController _descriptionController = TextEditingController();
 
   ZoneDetails _selectedZone;
+  String selectedCustomer;
+
   List<ZoneDetails> zones = [];
+  List<String> customers = [
+    "Sagar Panchal",
+    "Ronak chauhan",
+    "Dhruv Solanki"
+  ];
   bool isLoading = true;
   Widget status = loader();
   int quantity = 1;
   var _formKey = GlobalKey<FormState>();
 
-  String selectedPayment = "Cash";
+  String selectedService = "1";
 
   @override
   void initState() {
     super.initState();
     _apiZone();
+  }
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    super.dispose();
   }
   @override
   Widget build(BuildContext context) {
@@ -41,14 +51,6 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
       appBar: AppBar(
         title: Text("${user.firstname} ${user.lastname}"),
         titleSpacing: 0,
-        actions: [
-          IconButton(onPressed: () {
-            Navigator.push(context, MaterialPageRoute(
-                builder: (BuildContext context) => SettingPage()
-            ));
-          },
-              icon: Icon(Icons.settings)),
-        ],
       ),
       body: SingleChildScrollView(
         physics: BouncingScrollPhysics(),
@@ -60,17 +62,13 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 10,),
-                _buildTextField("City", _cityController),
+                _buildDropdownTextField("Zone"),
                 SizedBox(height: 10,),
-                _buildDropdownTextField("zone"),
-                SizedBox(height: 10,),
-                _buildTextField("Society", _societyController),
-                SizedBox(height: 10,),
-                _buildTextField("Customer", _customerController),
+                _buildDropdownTextField("Customer"),
                 SizedBox(height: 10,),
                 _buildTextField("Description", _descriptionController),
                 SizedBox(height: 20,),
-                _buildPaymentView(),
+                _buildServiceType(),
                 SizedBox(height: 10,),
                 _buildProductQuantity(),
               ],
@@ -109,16 +107,16 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
       ],
     );
   }
-  Widget _buildPaymentView(){
+  Widget _buildServiceType(){
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Payment Type", style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
+        Text("Select Service Type", style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
         SizedBox(height: 10,),
         Row(
           children: [
-            Expanded(child: RadioListTile(value: "Cash", groupValue: selectedPayment, onChanged: onRadioChanged,title: Text("Cash"),)),
-            Expanded(child: RadioListTile(value: "Online", groupValue: selectedPayment, onChanged: onRadioChanged,title: Text("Online"),)),
+            Expanded(child: RadioListTile(value: "1", groupValue: selectedService, onChanged: onRadioChanged,title: Text("Alkaline Water"),)),
+            Expanded(child: RadioListTile(value: "2", groupValue: selectedService, onChanged: onRadioChanged,title: Text("Mineral Water"),)),
           ],
         ),
       ],
@@ -126,7 +124,7 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
   }
   void onRadioChanged(value){
     setState(() {
-      selectedPayment = value;
+      selectedService = value;
     });
   }
   Widget _buildTextField(String title, TextEditingController controller) {
@@ -136,27 +134,6 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
         Text(title, style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
         SizedBox(height: 10,),
         TextFormField(
-          validator: (value) {
-            switch (title) {
-              case "City":
-                if (value.isEmpty) {
-                  return "Cannot be empty";
-                }
-                return null;
-              case "Society":
-                if (value.isEmpty) {
-                  return "Cannot be empty";
-                }
-                return null;
-              case "Customer":
-                if (value.isEmpty) {
-                  return "Cannot be empty";
-                }
-                return null;
-              default:
-                return null;
-            }
-          },
           controller: controller,
           cursorColor: Mycolor.accent,
           keyboardType: title == "Mobile No" ? TextInputType.number : TextInputType.text,
@@ -181,6 +158,7 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
       ],
     );
   }
+
   Widget _buildDropdownTextField(String title) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,15 +166,34 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
         Text(title, style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
         SizedBox(height: 10,),
         DropdownButtonFormField(
-          hint: Text("Select Zone"),
-          items: zones.map((e){
+          hint: Text("Select $title"),
+          items: title == "Zones" ? zones.map((e){
             return DropdownMenuItem(child:Text(e.title),value: e,);
+          }).toList() : customers.map((e){
+            return DropdownMenuItem(child:Text(e),value: e,);
           }).toList(),
-          onChanged: onChanged,
-          validator: (value){
-            if(_selectedZone == null){
-              return "Select Zone";
+          onChanged: (value){
+            if(title == "Zones"){
+              setState(() {
+                _selectedZone = value;
+              });
+            }else{
+              setState(() {
+                customers = value;
+              });
             }
+          },
+          validator: (value){
+            if(title == "Zones"){
+              if(value == null){
+                return "Select Zone";
+              }
+            }else{
+              if(value == null || value == ""){
+                return "Select Customer";
+              }
+            }
+
             return null;
           },
           decoration: InputDecoration(
@@ -219,9 +216,7 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
   }
 
   void onChanged(value){
-    setState(() {
-      _selectedZone = value;
-    });
+
   }
 
   void _apiZone(){
@@ -256,6 +251,28 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
                 }
             );
           });
+        });
+  }
+  void _apiDeliveredOrder(){
+    showProgress(context);
+    DeliveredOrderRepo.fetchData(
+      buyerId: "",
+        qtyOrdered: quantity.toString(),
+        totalAmount: "",
+        orderId: selectedService,
+        deliveryNotes: _descriptionController.text,
+        onSuccess: (object) {
+          if (object.flag == 1) {
+            toast(object.message);
+          } else {
+            errorToast(object.message);
+          }
+          Navigator.pop(context);
+        },
+        onError: (error) {
+          errorToast("Something went wrong");
+          Navigator.pop(context);
+          print("set delivered data api fail === > $error");
         });
   }
 

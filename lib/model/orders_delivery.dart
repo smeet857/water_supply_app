@@ -8,9 +8,12 @@ class OrderDelivery {
   String deliveryBoyId;
   String deliveryBoyName;
   String deliveryBoyPhone;
-  Null email;
+  String email;
   String zoneId;
   String zoneName;
+
+  //offline var
+  String serviceName;
 
   OrderDelivery(
       {this.orderDeliveryId,
@@ -24,6 +27,7 @@ class OrderDelivery {
         this.deliveryBoyPhone,
         this.email,
         this.zoneId,
+        this.serviceName,
         this.zoneName});
 
   OrderDelivery.fromJson(Map<String, dynamic> json) {
