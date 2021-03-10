@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:water_supply_app/model/delivered_order.dart';
+import 'package:water_supply_app/repo/delivered_order_repo.dart';
+import 'package:water_supply_app/util/functions.dart';
 import 'package:water_supply_app/util/my_colors.dart';
 
 class DeliveryPayment extends StatefulWidget {
+  final Data data;
+
+  const DeliveryPayment({Key key, this.data}) : super(key: key);
   @override
   _DeliveryPaymentState createState() => _DeliveryPaymentState();
 }
@@ -11,6 +18,13 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
   TextEditingController _dueController = TextEditingController();
   TextEditingController _payController = TextEditingController();
 
+  @override
+  void initState() {
+    _dueController.text = widget.data.dueAmount;
+    _payController.text = "0";
+
+    super.initState();
+  }
   @override
   void dispose() {
     _dueController.dispose();
@@ -64,6 +78,7 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
         Text(title, style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
         SizedBox(height: 10,),
         TextFormField(
+          enabled: title == "Due Amount" ? false : true,
           controller: controller,
           cursorColor: Mycolor.accent,
           keyboardType: TextInputType.number,
@@ -89,5 +104,33 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
   }
 
   void _onSubmitTap() {
+    if(_payController.text.isNotEmpty){
+      widget.data.pay = _payController.text;
+      widget.data.deliveryDate = DateFormat("yyyy-MM-dd").format(DateTime.now());
+      print("data === > ${widget.data.toJson()}");
+      _apiDeliveredOrder();
+    }else{
+      errorToast("Please enter pay amount");
+    }
+  }
+
+  void _apiDeliveredOrder(){
+    showProgress(context);
+    DeliveredOrderRepo.fetchData(
+       data: widget.data.toJson(),
+        onSuccess: (object) {
+          Navigator.pop(context);
+          if (object.flag == 1) {
+            toast(object.message);
+            Navigator.pushNamedAndRemoveUntil(context, '/home_page', (route) => false);
+          } else {
+            errorToast(object.message);
+          }
+        },
+        onError: (error) {
+          errorToast("Something went wrong");
+          Navigator.pop(context);
+          print("set delivered data api fail === > $error");
+        });
   }
 }

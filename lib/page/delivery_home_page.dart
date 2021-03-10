@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:water_supply_app/dialog/progress_dialog.dart';
+import 'package:water_supply_app/model/delivered_order.dart';
+import 'package:water_supply_app/model/services.dart';
+import 'package:water_supply_app/model/user.dart';
 import 'package:water_supply_app/model/zone_details.dart';
+import 'package:water_supply_app/page/delivery_payment.dart';
+import 'package:water_supply_app/page/payment_page.dart';
 import 'package:water_supply_app/page/setting_page.dart';
 import 'package:water_supply_app/repo/delivered_order_repo.dart';
+import 'package:water_supply_app/repo/get_customer_by_zone_repo.dart';
 import 'package:water_supply_app/repo/get_user_data_repo.dart';
 import 'package:water_supply_app/repo/zone_repo.dart';
 import 'package:water_supply_app/util/constants.dart';
@@ -10,6 +17,9 @@ import 'package:water_supply_app/util/my_colors.dart';
 import 'package:water_supply_app/util/view_function.dart';
 
 class DeliveryHomePage extends StatefulWidget {
+  final List<Services> services;
+
+  const DeliveryHomePage({Key key, this.services}) : super(key: key);
   @override
   _DeliveryHomePageState createState() => _DeliveryHomePageState();
 }
@@ -19,14 +29,10 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
   TextEditingController _descriptionController = TextEditingController();
 
   ZoneDetails _selectedZone;
-  String selectedCustomer;
+  User selectedCustomer;
 
   List<ZoneDetails> zones = [];
-  List<String> customers = [
-    "Sagar Panchal",
-    "Ronak chauhan",
-    "Dhruv Solanki"
-  ];
+  List<User> customers = [];
   bool isLoading = true;
   Widget status = loader();
   int quantity = 1;
@@ -62,7 +68,7 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 10,),
-                _buildDropdownTextField("Zone"),
+                _buildDropdownTextField("Zones"),
                 SizedBox(height: 10,),
                 _buildDropdownTextField("Customer"),
                 SizedBox(height: 10,),
@@ -87,7 +93,7 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
             borderRadius: BorderRadius.circular(5),
           ),
           child: Text(
-            "Submit",
+            "Next",
             style:
             TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
@@ -166,20 +172,22 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
         Text(title, style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
         SizedBox(height: 10,),
         DropdownButtonFormField(
+          value: title == "Zones" ? _selectedZone : selectedCustomer,
           hint: Text("Select $title"),
           items: title == "Zones" ? zones.map((e){
             return DropdownMenuItem(child:Text(e.title),value: e,);
           }).toList() : customers.map((e){
-            return DropdownMenuItem(child:Text(e),value: e,);
+            return DropdownMenuItem(child:Text("${e.firstname} ${e.lastname}"),value: e,);
           }).toList(),
           onChanged: (value){
             if(title == "Zones"){
               setState(() {
                 _selectedZone = value;
               });
+              _apiGetCustomer();
             }else{
               setState(() {
-                customers = value;
+                selectedCustomer = value;
               });
             }
           },
@@ -253,32 +261,56 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
           });
         });
   }
-  void _apiDeliveredOrder(){
+
+  void _apiGetCustomer(){
+    customers.clear();
+    selectedCustomer = null;
     showProgress(context);
-    DeliveredOrderRepo.fetchData(
-      buyerId: "",
-        qtyOrdered: quantity.toString(),
-        totalAmount: "",
-        orderId: selectedService,
-        deliveryNotes: _descriptionController.text,
+
+    GetCustomerByZoneRepo.fetchData(
+      zoneId: _selectedZone.id,
         onSuccess: (object) {
-          if (object.flag == 1) {
-            toast(object.message);
+          if (object.data != {}) {
+            customers = List.from(object.data);
+            setState(() {
+              isLoading = false;
+            });
           } else {
-            errorToast(object.message);
+            errorToast("Something went wrong on getting customers");
+            setState(() {
+              status = errorView(
+                  callBack: (){
+                    _apiGetCustomer();
+                  }
+              );
+            });
           }
           Navigator.pop(context);
         },
         onError: (error) {
-          errorToast("Something went wrong");
           Navigator.pop(context);
-          print("set delivered data api fail === > $error");
+          print("get customer data api fail === > $error");
+          setState(() {
+            status = errorView(
+                callBack: (){
+                  _apiZone();
+                }
+            );
+          });
         });
   }
 
-  void _onSubmitTap() {
+  void _onSubmitTap() async{
     if(_formKey.currentState.validate()){
+      var data = Data();
+      data.buyerId = selectedCustomer.id;
+      data.deliveryNotes = _descriptionController.text;
+      data.orderId = selectedService;
+      data.totalAmount = await _calculateTotalAmount();
+      data.qtyOrdered = quantity.toString();
+      data.dueAmount = selectedCustomer.dueAmount;
 
+      Navigator.push(context, MaterialPageRoute(builder: (context) => DeliveryPayment(data: data,)));
     }
   }
 
@@ -293,5 +325,17 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
     setState(() {
       quantity ++;
     });
+  }
+  Future<String> _calculateTotalAmount()async{
+    int _totalAmount = 0;
+
+    for(int i = 0 ; i< widget.services.length ; i++){
+       if(selectedService == widget.services[i].id){
+         _totalAmount = int.parse(widget.services[i].price) * quantity;
+         break;
+       }
+    }
+    String str = _totalAmount.toString();
+    return str;
   }
 }

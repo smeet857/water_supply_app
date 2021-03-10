@@ -10,24 +10,13 @@ import 'package:water_supply_app/util/constants.dart';
 class DeliveredOrderRepo {
 
   static void fetchData({
-    @required String buyerId,
-    @required String qtyOrdered,
-    @required String totalAmount,
-    @required String orderId,
-    @required String deliveryNotes,
+    @required Map<String,dynamic> data,
     @required ValueChanged<BaseModel> onSuccess,
     @required ValueChanged<String> onError,
   }) async {
     var body = {
       "data":[
-        {
-          "buyer_id":buyerId,
-          "delivery_date":DateFormat("yyyy-MM-dd").format(DateTime.now()),
-          "qty_ordered":orderId,
-          "total_amount":totalAmount,
-          "order_id":orderId,
-          "delivery_notes":deliveryNotes
-        }
+        data
       ]
     };
     Api().postCall(

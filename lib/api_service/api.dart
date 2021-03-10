@@ -8,6 +8,7 @@ class Api {
   void getCall({
     @required String url,
     String token,
+    Map<String, dynamic> body,
     @required ValueChanged<dynamic> onSuccess,
     @required ValueChanged<String> onError,
   }) async {

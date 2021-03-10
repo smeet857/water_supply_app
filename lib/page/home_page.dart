@@ -127,7 +127,7 @@ class _HomePageState extends State<HomePage> {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (BuildContext context) => DeliveryHomePage()));
+                          builder: (BuildContext context) => DeliveryHomePage(services: _serviceData,)));
                 },
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(5),
@@ -139,7 +139,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            SizedBox(
+            /*SizedBox(
               width: 20,
             ),
             Expanded(
@@ -161,7 +161,7 @@ class _HomePageState extends State<HomePage> {
                       TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
-            ),
+            ),*/
           ],
         ),
       ),
