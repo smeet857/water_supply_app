@@ -29,6 +29,7 @@ class Data {
   String orderId;
   String pay;
   String deliveryNotes;
+  String returnBottles;
 
   String dueAmount;
 
@@ -40,6 +41,7 @@ class Data {
         this.orderId,
         this.pay,
         this.dueAmount,
+        this.returnBottles,
         this.deliveryNotes});
 
   Data.fromJson(Map<String, dynamic> json) {
@@ -50,6 +52,7 @@ class Data {
     orderId = json['order_id'];
     pay = json['pay'];
     deliveryNotes = json['delivery_notes'];
+    returnBottles = json['qty_return'];
   }
 
   Map<String, dynamic> toJson() {
@@ -61,6 +64,7 @@ class Data {
     data['order_id'] = this.orderId;
     data['pay'] = this.pay;
     data['delivery_notes'] = this.deliveryNotes;
+    data['qty_return'] = this.returnBottles;
     return data;
   }
 }

@@ -9,6 +9,10 @@ class MeetingDataSource extends CalendarDataSource {
   }
 
   @override
+  String getNotes(int index) {
+    return appointments[index].orderId;
+  }
+  @override
   DateTime getStartTime(int index) {
     return appointments[index].from;
   }

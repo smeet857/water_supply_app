@@ -64,12 +64,15 @@ class _PaymentPageState extends State<PaymentPage> {
         ),
         body: listPaymentHistory.length == 0 ? Center(
           child: Text("No Payment",style: TextStyle(color: Mycolor.accent,fontSize: 20,fontWeight: FontWeight.w500),),
-        ) : ListView.builder(
+        ) : ListView.separated(
           itemBuilder: (context, index) {
             return PaymentView(index, listPaymentHistory[index]);
           },
           itemCount: listPaymentHistory.length,
           physics: NeverScrollableScrollPhysics(),
+          separatorBuilder: (BuildContext context, int index) {
+            return Divider(height: 1 ,thickness: 1,color: Colors.black12,);
+          },
         )
     );
   }
@@ -129,7 +132,7 @@ class PaymentView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           CircleAvatar(
-            radius: 20,
+            radius: 35,
             backgroundColor: Mycolor.accent,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -138,15 +141,17 @@ class PaymentView extends StatelessWidget {
                   "${ph.paymentReceived}",
                   style: TextStyle(
                       color: Colors.white,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold),
                 ),
                 SizedBox(
-                  height: 10,
+                  height: 5,
                 ),
                 Text(
                   "Paid",
                   style: TextStyle(
                       color: Colors.white,
+                      fontSize: 13,
                       fontWeight: FontWeight.bold),
                 ),
               ],

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:water_supply_app/dialog/progress_dialog.dart';
 import 'package:water_supply_app/model/delivered_order.dart';
+import 'package:water_supply_app/model/orders.dart';
 import 'package:water_supply_app/model/services.dart';
 import 'package:water_supply_app/model/user.dart';
 import 'package:water_supply_app/model/zone_details.dart';
@@ -9,6 +11,7 @@ import 'package:water_supply_app/page/payment_page.dart';
 import 'package:water_supply_app/page/setting_page.dart';
 import 'package:water_supply_app/repo/delivered_order_repo.dart';
 import 'package:water_supply_app/repo/get_customer_by_zone_repo.dart';
+import 'package:water_supply_app/repo/get_order_rate_by_customer.dart';
 import 'package:water_supply_app/repo/get_user_data_repo.dart';
 import 'package:water_supply_app/repo/zone_repo.dart';
 import 'package:water_supply_app/util/constants.dart';
@@ -27,12 +30,14 @@ class DeliveryHomePage extends StatefulWidget {
 class _DeliveryHomePageState extends State<DeliveryHomePage> {
 
   TextEditingController _descriptionController = TextEditingController();
+  TextEditingController _returnBottlesController = TextEditingController();
 
   ZoneDetails _selectedZone;
   User selectedCustomer;
 
   List<ZoneDetails> zones = [];
   List<User> customers = [];
+  List<Orders> orderList = [];
   bool isLoading = true;
   Widget status = loader();
   int quantity = 1;
@@ -43,11 +48,13 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
   @override
   void initState() {
     super.initState();
+    _returnBottlesController.text = "0";
     _apiZone();
   }
   @override
   void dispose() {
     _descriptionController.dispose();
+    _returnBottlesController.dispose();
     super.dispose();
   }
   @override
@@ -73,6 +80,8 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
                 _buildDropdownTextField("Customer"),
                 SizedBox(height: 10,),
                 _buildTextField("Description", _descriptionController),
+                SizedBox(height: 10,),
+                _buildTextField("Return Bottles", _returnBottlesController),
                 SizedBox(height: 20,),
                 _buildServiceType(),
                 SizedBox(height: 10,),
@@ -93,7 +102,7 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
             borderRadius: BorderRadius.circular(5),
           ),
           child: Text(
-            "Next",
+            "Submit",
             style:
             TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
@@ -140,10 +149,20 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
         Text(title, style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
         SizedBox(height: 10,),
         TextFormField(
+          validator: (value){
+            switch(title){
+              case 'Return Bottle':
+                if(value.isEmpty){
+                  return "Required Return Bottle";
+                }
+                return null;
+              default:
+                return null;
+            }
+          },
           controller: controller,
           cursorColor: Mycolor.accent,
-          keyboardType: title == "Mobile No" ? TextInputType.number : TextInputType.text,
-          maxLength: title == "Mobile No" ? 10 : null,
+          keyboardType: title == "Return Bottles" ? TextInputType.number : TextInputType.text,
           minLines: 1,
           maxLines: 1,
           decoration: InputDecoration(
@@ -189,6 +208,7 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
               setState(() {
                 selectedCustomer = value;
               });
+              _apiGetOrderRateByCustomer() ;
             }
           },
           validator: (value){
@@ -227,6 +247,16 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
 
   }
 
+  Future<String> _getOrderId()async{
+    String id;
+    for(int i = 0;i<orderList.length;i++){
+      if(orderList[i].serviceId == selectedService){
+        id =  orderList[i].orderId;
+        break;
+      }
+    }
+    return id;
+  }
   void _apiZone(){
     setState(() {
       isLoading = true;
@@ -270,33 +300,64 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
     GetCustomerByZoneRepo.fetchData(
       zoneId: _selectedZone.id,
         onSuccess: (object) {
-          if (object.data != {}) {
+          Navigator.pop(context);
+          if (object.data != null) {
             customers = List.from(object.data);
-            setState(() {
-              isLoading = false;
-            });
+            customers = customers.where((element) => element.roleId == roleUser).toList();
+            setState(() {});
           } else {
             errorToast("Something went wrong on getting customers");
-            setState(() {
-              status = errorView(
-                  callBack: (){
-                    _apiGetCustomer();
-                  }
-              );
-            });
+          }
+        },
+        onError: (error) {
+          Navigator.pop(context);
+          print("get customer data api fail === > $error");
+        });
+  }
+
+  void _apiGetOrderRateByCustomer(){
+    showProgress(context);
+    GetOrderRateByCustomerRepo.fetchData(
+      userId: selectedCustomer.id,
+        onSuccess: (object) {
+          if (object.data != {}) {
+            orderList = List.from(object.data);
+            if(orderList.length == 0){
+              errorToast("No Orders of this customer");
+            }
+          } else {
+            errorToast("Something went wrong on getting order");
+            print("Error : ${object.message}");
           }
           Navigator.pop(context);
         },
         onError: (error) {
           Navigator.pop(context);
-          print("get customer data api fail === > $error");
-          setState(() {
-            status = errorView(
-                callBack: (){
-                  _apiZone();
-                }
-            );
-          });
+          print("get order data api fail === > $error");
+        });
+  }
+
+  void _apiDeliveredOrder(Data data){
+    print("token ====> ${user.token}");
+    print("pass date  ====> ${data.toJson()}");
+
+    showProgress(context);
+    DeliveredOrderRepo.fetchData(
+       data: data.toJson(),
+        onSuccess: (object) {
+          Navigator.pop(context);
+          if (object.flag == 1) {
+            toast(object.message);
+            _clearAllField();
+            Navigator.pushNamedAndRemoveUntil(context, '/home_page', (route) => false);
+          } else {
+            errorToast(object.message);
+          }
+        },
+        onError: (error) {
+          errorToast("Something went wrong");
+          Navigator.pop(context);
+          print("delivered data api fail === > $error");
         });
   }
 
@@ -305,15 +366,28 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
       var data = Data();
       data.buyerId = selectedCustomer.id;
       data.deliveryNotes = _descriptionController.text;
-      data.orderId = selectedService;
+      data.orderId = await _getOrderId();
       data.totalAmount = await _calculateTotalAmount();
       data.qtyOrdered = quantity.toString();
+      data.returnBottles = _returnBottlesController.text;
       data.dueAmount = selectedCustomer.dueAmount;
+      data.pay = "0";
+      data.deliveryDate = DateFormat("yyyy-MM-dd").format(DateTime.now());
 
-      Navigator.push(context, MaterialPageRoute(builder: (context) => DeliveryPayment(data: data,)));
+      _apiDeliveredOrder(data);
+
+      // Navigator.push(context, MaterialPageRoute(builder: (context) => DeliveryPayment(data: data,)));
     }
   }
 
+  void _clearAllField(){
+   setState(() {
+     customers.clear();
+     _descriptionController.text = "";
+     _returnBottlesController.text = "0";
+     quantity = 1;
+   });
+  }
   void onMinusTap() {
     if(quantity > 1){
       setState(() {

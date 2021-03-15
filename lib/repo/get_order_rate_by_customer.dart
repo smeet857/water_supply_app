@@ -2,35 +2,33 @@
 import 'package:flutter/material.dart';
 import 'package:water_supply_app/api_service/api.dart';
 import 'package:water_supply_app/model/base_model.dart';
-import 'package:water_supply_app/model/user.dart';
+import 'package:water_supply_app/model/content.dart';
+import 'package:water_supply_app/model/orders.dart';
 
-class GetCustomerByZoneRepo {
 
-  GetCustomerByZoneRepo._();
+class GetOrderRateByCustomerRepo {
 
   static void fetchData({
-    @required String zoneId,
+    @required String userId,
     @required ValueChanged<BaseModel> onSuccess,
     @required ValueChanged<String> onError,
   }) async {
-    var _body = {
-     "zone_id":zoneId
-    };
-
+    var body = {
+      'user_id':userId
+};
     Api().postCall(
-        url: 'getCustomersByZone',
-        token: token,
-        body: _body,
+        url: 'getOrderRateByCustomer',
+        body: body,
         onSuccess: (success) {
-          var data = success['customers'];
+          var data = success['orders'];
           if (data != null || data != "") {
-            List<User> list = [];
+            List<Orders> list = [];
             data.forEach((element){
-              list.add(new User.fromJson(element));
+              list.add(Orders.fromJson(element));
             });
             onSuccess(BaseModel.fromJson(success, list));
           }else{
-            onSuccess(BaseModel.fromJson(success, data));
+            onSuccess(BaseModel.fromJson(success, {}));
           }
         },
         onError: (error) => onError(error)

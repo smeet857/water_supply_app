@@ -139,7 +139,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            /*SizedBox(
+            SizedBox(
               width: 20,
             ),
             Expanded(
@@ -161,7 +161,7 @@ class _HomePageState extends State<HomePage> {
                       TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
-            ),*/
+            ),
           ],
         ),
       ),

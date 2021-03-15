@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:water_supply_app/calendar/meeting.dart';
 import 'package:water_supply_app/calendar/meeting_data_source.dart';
-import 'package:water_supply_app/model/orders.dart';
 import 'package:water_supply_app/model/orders_delivery.dart';
-import 'package:water_supply_app/page/setting_page.dart';
+import 'package:water_supply_app/page/order_details_page.dart';
 import 'package:water_supply_app/repo/get_user_data_repo.dart';
 import 'package:water_supply_app/util/constants.dart';
 import 'package:water_supply_app/util/functions.dart';
@@ -17,8 +15,8 @@ class UserPage extends StatefulWidget {
 }
 
 class _UserPageState extends State<UserPage> {
-
   List<OrderDelivery> deliverOrder = [];
+  var meetings = <Meeting>[];
   bool isLoading = true;
   Widget status = loader();
   DateTime currentDate = DateTime.now();
@@ -28,9 +26,10 @@ class _UserPageState extends State<UserPage> {
     super.initState();
     _apiOrder();
   }
+
   @override
   Widget build(BuildContext context) {
-    if(isLoading) return status;
+    if (isLoading) return status;
     return Scaffold(
       appBar: AppBar(
         title: Text("${user.firstname} ${user.lastname}"),
@@ -38,20 +37,45 @@ class _UserPageState extends State<UserPage> {
       ),
       body: Container(
         child: SfCalendar(
+          onTap: (details){
+            if(details.targetElement == CalendarElement.appointment){
+              var od = _getOrderDeliveryFromArray(details.appointments.first.orderId);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => OrderDetailsPage(orderDelivery: od,)));
+            }
+          },
           view: CalendarView.month,
-          dataSource: MeetingDataSource(_getDataSource()),
-          monthViewSettings: MonthViewSettings(showAgenda: true,
-              appointmentDisplayMode: MonthAppointmentDisplayMode.appointment),
+          appointmentBuilder: (c,cad){
+            var od = _getOrderDeliveryFromArray(cad.appointments.first.orderId);
+            var m = cad.appointments.first;
+            return Container(
+              padding: EdgeInsets.symmetric(horizontal: 5),
+              color: m.background,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Product : ${od.serviceName}",style: TextStyle(color: Colors.white,fontSize: 13,fontWeight: FontWeight.bold),),
+                  SizedBox(height: 5,),
+                  Text("Total Amount : ${od.totalAmount}",style: TextStyle(color: Colors.white,fontSize: 13,fontWeight: FontWeight.bold),)
+                ],
+              ),
+            );
+          },
+          dataSource: MeetingDataSource(meetings),
+          monthViewSettings: MonthViewSettings(
+              showAgenda: true,
+              appointmentDisplayMode: MonthAppointmentDisplayMode.indicator),
         ),
       ),
     );
   }
 
-  void _apiOrder(){
+  void _apiOrder() {
     setState(() {
       isLoading = true;
       status = loader();
     });
+
     GetUserDataRepo.fetchData(
         token: user.token,
         onSuccess: (object) {
@@ -60,11 +84,18 @@ class _UserPageState extends State<UserPage> {
             var orders = user.history.orders;
 
             orders.forEach((ord) {
-              var sn = ord.service.title;
               ord.orderDelivery.forEach((delivery) {
-                delivery.serviceName = sn;
+                delivery.serviceName = ord.service.title;
+                deliverOrder.add(delivery);
+                meetings.add(Meeting(
+                    delivery.serviceName,
+                    DateTime.parse(delivery.deliveryDate),
+                    DateTime.parse(delivery.deliveryDate),
+                    ord.serviceId == "1" ? Colors.red : Colors.green,
+                    false, delivery.orderId
+                ));
               });
-              deliverOrder.addAll(ord.orderDelivery);
+              // deliverOrder.addAll(ord.orderDelivery);
             });
 
             setState(() {
@@ -73,11 +104,9 @@ class _UserPageState extends State<UserPage> {
           } else {
             errorToast(object.message);
             setState(() {
-              status = errorView(
-                  callBack: (){
-                    _apiOrder();
-                  }
-              );
+              status = errorView(callBack: () {
+                _apiOrder();
+              });
             });
           }
         },
@@ -95,18 +124,15 @@ class _UserPageState extends State<UserPage> {
           //   );
           // });
         });
+
   }
-  List<Meeting> _getDataSource() {
-    var meetings = <Meeting>[];
-    // deliverOrder.forEach((element) {
-    //   meetings.add(Meeting("${element.serviceName}",from, to, background, isAllDay));
-    // });
-    final DateTime today = DateTime.now();
-    final DateTime startTime =
-    DateTime(today.year, today.month, today.day, 9, 0, 0);
-    final DateTime endTime = startTime.add(const Duration(hours: 2));
-    meetings.add(
-        Meeting('Conference', startTime, endTime, const Color(0xFF0F8644), false));
-    return meetings;
+  OrderDelivery _getOrderDeliveryFromArray(String orderId){
+    OrderDelivery orderDelivery;
+    for(int i =0 ;i< deliverOrder.length ; i++){
+      if(orderId == deliverOrder[i].orderId){
+        orderDelivery = deliverOrder[i];
+      }
+    }
+    return orderDelivery;
   }
 }

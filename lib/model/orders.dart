@@ -20,6 +20,7 @@ class Orders {
   Services service;
   Buyer buyer;
   ZoneDetails zoneDetails;
+  String orderId;
 
   Orders(
       {this.id,
@@ -35,6 +36,7 @@ class Orders {
         this.orderDelivery,
         this.service,
         this.buyer,
+        this.orderId,
         this.zoneDetails});
 
   Orders.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,7 @@ class Orders {
     discount = json['discount'];
     grandTotal = json['grand_total'];
     createdAt = json['created_at'];
+    orderId = json['order_id'];
     notes = json['notes'];
     if (json['order_delivery'] != null) {
       orderDelivery = new List<OrderDelivery>();
@@ -71,6 +74,7 @@ class Orders {
     data['price'] = this.price;
     data['sub_total'] = this.subTotal;
     data['discount'] = this.discount;
+    data['order_id'] = this.orderId;
     data['grand_total'] = this.grandTotal;
     data['created_at'] = this.createdAt;
     data['notes'] = this.notes;
