@@ -4,6 +4,7 @@ import 'package:water_supply_app/dialog/progress_dialog.dart';
 import 'package:water_supply_app/model/delivered_order.dart';
 import 'package:water_supply_app/model/orders.dart';
 import 'package:water_supply_app/model/services.dart';
+import 'package:water_supply_app/model/society_model.dart';
 import 'package:water_supply_app/model/user.dart';
 import 'package:water_supply_app/model/zone_details.dart';
 import 'package:water_supply_app/page/delivery_payment.dart';
@@ -12,6 +13,7 @@ import 'package:water_supply_app/page/setting_page.dart';
 import 'package:water_supply_app/repo/delivered_order_repo.dart';
 import 'package:water_supply_app/repo/get_customer_by_zone_repo.dart';
 import 'package:water_supply_app/repo/get_order_rate_by_customer.dart';
+import 'package:water_supply_app/repo/get_society_by_zone_id_repo.dart';
 import 'package:water_supply_app/repo/get_user_data_repo.dart';
 import 'package:water_supply_app/repo/zone_repo.dart';
 import 'package:water_supply_app/util/constants.dart';
@@ -30,25 +32,31 @@ class DeliveryHomePage extends StatefulWidget {
 class _DeliveryHomePageState extends State<DeliveryHomePage> {
 
   TextEditingController _descriptionController = TextEditingController();
+  TextEditingController _dateController = TextEditingController();
   TextEditingController _returnBottlesController = TextEditingController();
 
   ZoneDetails _selectedZone;
   User selectedCustomer;
+  SocietyModel selectedSociety;
+  DateTime selectedDate = DateTime.now();
 
   List<ZoneDetails> zones = [];
   List<User> customers = [];
+  List<SocietyModel> societyList = [];
   List<Orders> orderList = [];
   bool isLoading = true;
   Widget status = loader();
   int quantity = 1;
+  int returnBottle = 0;
   var _formKey = GlobalKey<FormState>();
 
-  String selectedService = "1";
+  Orders selectedService;
 
   @override
   void initState() {
     super.initState();
     _returnBottlesController.text = "0";
+    _dateController.text = DateFormat("dd-MM-yyyy").format(selectedDate);
     _apiZone();
   }
   @override
@@ -77,15 +85,23 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
                 SizedBox(height: 10,),
                 _buildDropdownTextField("Zones"),
                 SizedBox(height: 10,),
+                _buildDropdownTextField("Society"),
+                SizedBox(height: 10,),
                 _buildDropdownTextField("Customer"),
-                SizedBox(height: 10,),
-                _buildTextField("Description", _descriptionController),
-                SizedBox(height: 10,),
-                _buildTextField("Return Bottles", _returnBottlesController),
                 SizedBox(height: 20,),
                 _buildServiceType(),
                 SizedBox(height: 10,),
                 _buildProductQuantity(),
+                SizedBox(height: 10,),
+                _buildReturnBottle(),
+                SizedBox(height: 20,),
+                GestureDetector(
+                  onTap: (){
+                    _showDatePicker();
+                  },
+                    child: _buildTextField("Select Date", _dateController)),
+                SizedBox(height: 20,),
+                _buildTextField("Description", _descriptionController),
               ],
             ),
           ),
@@ -122,19 +138,46 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
       ],
     );
   }
-  Widget _buildServiceType(){
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  void _showDatePicker(){
+    showDatePicker(
+        context: context,
+        initialDate: selectedDate,
+        firstDate: DateTime(1999),
+        lastDate: DateTime(2040),
+    ).then((value){
+     setState(() {
+       selectedDate = value;
+       _dateController.text = DateFormat("dd-MM-yyyy").format(selectedDate);
+     });
+    });
+  }
+  Widget _buildReturnBottle(){
+    return Row(
       children: [
-        Text("Select Service Type", style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
-        SizedBox(height: 10,),
-        Row(
-          children: [
-            Expanded(child: RadioListTile(value: "1", groupValue: selectedService, onChanged: onRadioChanged,title: Text("Alkaline Water"),)),
-            Expanded(child: RadioListTile(value: "2", groupValue: selectedService, onChanged: onRadioChanged,title: Text("Mineral Water"),)),
-          ],
-        ),
+        Text("Return Bottle", style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
+        Spacer(),
+        FlatButton(onPressed: onReturnBottleMinusTap,height: 25,minWidth: 20, color: Mycolor.accent,child: Text("-",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),)),
+        Text("  $returnBottle  ", style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold,fontSize: 18),),
+        FlatButton(onPressed: onReturnBottlePlusTap,height: 25,minWidth: 20, color: Mycolor.accent,child: Text("+",style: TextStyle(fontWeight: FontWeight.bold,color: Colors.white),)),
+
       ],
+    );
+  }
+  Widget _buildServiceType(){
+    return Visibility(
+      visible: orderList.length != 0,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Select Service Type", style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
+          SizedBox(height: 10,),
+          Row(
+            children: orderList.map((e){
+              return Expanded(child: RadioListTile(value: e, groupValue: selectedService, onChanged: onRadioChanged,title: Text(e.title),));
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
   void onRadioChanged(value){
@@ -161,6 +204,7 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
             }
           },
           controller: controller,
+          enabled: title == "Select Date" ? false : true,
           cursorColor: Mycolor.accent,
           keyboardType: title == "Return Bottles" ? TextInputType.number : TextInputType.text,
           minLines: 1,
@@ -191,10 +235,12 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
         Text(title, style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
         SizedBox(height: 10,),
         DropdownButtonFormField(
-          value: title == "Zones" ? _selectedZone : selectedCustomer,
+          value: title == "Zones" ? _selectedZone : title == "Society" ? selectedSociety :selectedCustomer,
           hint: Text("Select $title"),
           items: title == "Zones" ? zones.map((e){
             return DropdownMenuItem(child:Text(e.title),value: e,);
+          }).toList() :title == "Society" ? societyList.map((e){
+            return DropdownMenuItem(child:Text(e.name),value: e,);
           }).toList() : customers.map((e){
             return DropdownMenuItem(child:Text("${e.firstname} ${e.lastname}"),value: e,);
           }).toList(),
@@ -202,6 +248,11 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
             if(title == "Zones"){
               setState(() {
                 _selectedZone = value;
+              });
+              _apiGetSociety();
+            }else if(title == "Society"){
+              setState(() {
+                selectedSociety = value;
               });
               _apiGetCustomer();
             }else{
@@ -216,12 +267,15 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
               if(value == null){
                 return "Select Zone";
               }
+            }else if(title == "Society"){
+              if(value == null){
+                return "Select society";
+              }
             }else{
               if(value == null || value == ""){
                 return "Select Customer";
               }
             }
-
             return null;
           },
           decoration: InputDecoration(
@@ -266,6 +320,9 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
         onSuccess: (object) {
           if (object.flag == 1) {
             zones = object.data;
+            if(zones.isEmpty){
+              errorToast("No Zone Data");
+            }
             setState(() {
               isLoading = false;
             });
@@ -304,6 +361,9 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
           if (object.data != null) {
             customers = List.from(object.data);
             customers = customers.where((element) => element.roleId == roleUser).toList();
+            if(customers.isEmpty){
+              errorToast("No Customer Data");
+            }
             setState(() {});
           } else {
             errorToast("Something went wrong on getting customers");
@@ -314,9 +374,36 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
           print("get customer data api fail === > $error");
         });
   }
+  void _apiGetSociety(){
+    societyList.clear();
+    selectedSociety = null;
+    showProgress(context);
+
+    GetSocietyByZoneIdRepo.fetchData(
+        zoneId: _selectedZone.id,
+        onSuccess: (object) {
+          Navigator.pop(context);
+          if (object.data != null) {
+            societyList = List.from(object.data);
+            if(societyList.isEmpty){
+              errorToast("No Society Data");
+            }
+            setState(() {});
+          } else {
+            errorToast("Something went wrong on getting society");
+          }
+        },
+        onError: (error) {
+          Navigator.pop(context);
+          print("get society data api fail === > $error");
+        });
+  }
 
   void _apiGetOrderRateByCustomer(){
     showProgress(context);
+    setState(() {
+      orderList.clear();
+    });
     GetOrderRateByCustomerRepo.fetchData(
       userId: selectedCustomer.id,
         onSuccess: (object) {
@@ -324,16 +411,20 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
             orderList = List.from(object.data);
             if(orderList.length == 0){
               errorToast("No Orders of this customer");
+            }else{
+              selectedService = orderList[0];
             }
           } else {
             errorToast("Something went wrong on getting order");
             print("Error : ${object.message}");
           }
           Navigator.pop(context);
+          setState(() {});
         },
         onError: (error) {
           Navigator.pop(context);
           print("get order data api fail === > $error");
+          setState(() {});
         });
   }
 
@@ -366,16 +457,15 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
       var data = Data();
       data.buyerId = selectedCustomer.id;
       data.deliveryNotes = _descriptionController.text;
-      data.orderId = await _getOrderId();
-      data.totalAmount = await _calculateTotalAmount();
+      data.orderId = selectedService.orderId;
+      data.totalAmount = (int.parse(selectedService.price) * quantity).toString();
       data.qtyOrdered = quantity.toString();
-      data.returnBottles = _returnBottlesController.text;
+      data.returnBottles = returnBottle.toString();
       data.dueAmount = selectedCustomer.dueAmount;
       data.pay = "0";
-      data.deliveryDate = DateFormat("yyyy-MM-dd").format(DateTime.now());
+      data.deliveryDate = DateFormat("yyyy-MM-dd").format(selectedDate);
 
       _apiDeliveredOrder(data);
-
       // Navigator.push(context, MaterialPageRoute(builder: (context) => DeliveryPayment(data: data,)));
     }
   }
@@ -395,16 +485,28 @@ class _DeliveryHomePageState extends State<DeliveryHomePage> {
       });
     }
   }
+  void onReturnBottleMinusTap() {
+    if(returnBottle > 0){
+      setState(() {
+        returnBottle = returnBottle - 1;
+      });
+    }
+  }
   void onPlusTap() {
     setState(() {
       quantity ++;
+    });
+  }
+  void onReturnBottlePlusTap() {
+    setState(() {
+      returnBottle ++;
     });
   }
   Future<String> _calculateTotalAmount()async{
     int _totalAmount = 0;
 
     for(int i = 0 ; i< widget.services.length ; i++){
-       if(selectedService == widget.services[i].id){
+       if(selectedService.serviceId == widget.services[i].id){
          _totalAmount = int.parse(widget.services[i].price) * quantity;
          break;
        }

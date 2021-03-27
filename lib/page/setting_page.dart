@@ -24,7 +24,6 @@ class _SettingPageState extends State<SettingPage> {
             height: 10,
           ),
           ListTile(title: Text("Profile", style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.w500,fontSize: 18),), trailing: Icon(Icons.arrow_forward_ios, color: Mycolor.accent,size: 20,), onTap: _onProfileTap,),
-          ListTile(title: Text("Payment", style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.w500,fontSize: 18),), trailing: Icon(Icons.arrow_forward_ios, color: Mycolor.accent,size: 20,), onTap: _onPaymentTap,),
           ListTile(title: Text("Logout", style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.w500,fontSize: 18),), trailing: Icon(Icons.arrow_forward_ios, color: Mycolor.accent,size: 20,), onTap: _onLogoutTap,),
         ],
       ),

@@ -7,7 +7,7 @@
          FlutterApplication and put your custom class here. -->
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="water_supply_app"
+        android:label="Jeel Aqua"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

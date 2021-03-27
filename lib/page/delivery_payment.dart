@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:water_supply_app/model/society_model.dart';
 import 'package:water_supply_app/model/user.dart';
 import 'package:water_supply_app/model/zone_details.dart';
 import 'package:water_supply_app/repo/get_customer_by_zone_repo.dart';
 import 'package:water_supply_app/repo/get_order_rate_by_customer.dart';
+import 'package:water_supply_app/repo/get_society_by_zone_id_repo.dart';
 import 'package:water_supply_app/repo/update_user_due_amount_repo.dart';
 import 'package:water_supply_app/repo/user_payment_history_repo.dart';
 import 'package:water_supply_app/repo/zone_repo.dart';
@@ -29,8 +31,11 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
 
   ZoneDetails _selectedZone;
   User selectedCustomer;
+  SocietyModel selectedSociety;
+
 
   List<ZoneDetails> zones = [];
+  List<SocietyModel> societyList = [];
   List<User> customers = [];
 
   bool isLoading = true;
@@ -86,6 +91,8 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
               children: [
                 SizedBox(height: 10,),
                 _buildDropdownTextField("Zones"),
+                SizedBox(height: 10,),
+                _buildDropdownTextField("Society"),
                 SizedBox(height: 10,),
                 _buildDropdownTextField("Customer"),
                 SizedBox(height: 10,),
@@ -156,10 +163,12 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
         Text(title, style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
         SizedBox(height: 10,),
         DropdownButtonFormField(
-          value: title == "Zones" ? _selectedZone : selectedCustomer,
+          value: title == "Zones" ? _selectedZone : title == "Society" ? selectedSociety :selectedCustomer,
           hint: Text("Select $title"),
           items: title == "Zones" ? zones.map((e){
             return DropdownMenuItem(child:Text(e.title),value: e,);
+          }).toList() :title == "Society" ? societyList.map((e){
+            return DropdownMenuItem(child:Text(e.name),value: e,);
           }).toList() : customers.map((e){
             return DropdownMenuItem(child:Text("${e.firstname} ${e.lastname}"),value: e,);
           }).toList(),
@@ -167,6 +176,11 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
             if(title == "Zones"){
               setState(() {
                 _selectedZone = value;
+              });
+              _apiGetSociety();
+            }else if(title == "Society"){
+              setState(() {
+                selectedSociety = value;
               });
               _apiGetCustomer();
             }else{
@@ -180,6 +194,10 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
             if(title == "Zones"){
               if(value == null){
                 return "Select Zone";
+              }
+            }else if(title == "Society"){
+              if(value == null){
+                return "Select Society";
               }
             }else{
               if(value == null || value == ""){
@@ -241,6 +259,30 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
                 }
             );
           });
+        });
+  }
+  void _apiGetSociety(){
+    societyList.clear();
+    selectedSociety = null;
+    showProgress(context);
+
+    GetSocietyByZoneIdRepo.fetchData(
+        zoneId: _selectedZone.id,
+        onSuccess: (object) {
+          Navigator.pop(context);
+          if (object.data != null) {
+            societyList = List.from(object.data);
+            if(societyList.isEmpty){
+              errorToast("No Society Data");
+            }
+            setState(() {});
+          } else {
+            errorToast("Something went wrong on getting society");
+          }
+        },
+        onError: (error) {
+          Navigator.pop(context);
+          print("get society data api fail === > $error");
         });
   }
 

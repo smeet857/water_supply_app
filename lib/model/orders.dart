@@ -16,6 +16,7 @@ class Orders {
   String grandTotal;
   String createdAt;
   String notes;
+  String title;
   List<OrderDelivery> orderDelivery;
   Services service;
   Buyer buyer;
@@ -33,6 +34,7 @@ class Orders {
         this.grandTotal,
         this.createdAt,
         this.notes,
+        this.title,
         this.orderDelivery,
         this.service,
         this.buyer,
@@ -47,6 +49,7 @@ class Orders {
     price = json['price'];
     subTotal = json['sub_total'];
     discount = json['discount'];
+    title = json['title'];
     grandTotal = json['grand_total'];
     createdAt = json['created_at'];
     orderId = json['order_id'];
@@ -72,6 +75,7 @@ class Orders {
     data['user_id'] = this.userId;
     data['quantity'] = this.quantity;
     data['price'] = this.price;
+    data['title'] = this.title;
     data['sub_total'] = this.subTotal;
     data['discount'] = this.discount;
     data['order_id'] = this.orderId;

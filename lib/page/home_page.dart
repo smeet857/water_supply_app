@@ -7,12 +7,14 @@ import 'package:water_supply_app/page/delivery_home_page.dart';
 import 'package:water_supply_app/page/enquiry_page.dart';
 import 'package:water_supply_app/page/login_page.dart';
 import 'package:water_supply_app/page/module_details_page.dart';
+import 'package:water_supply_app/page/payment_page.dart';
 import 'package:water_supply_app/page/setting_page.dart';
 import 'package:water_supply_app/page/user_page.dart';
 import 'package:water_supply_app/repo/content_repo.dart';
 import 'package:water_supply_app/repo/services_repo.dart';
 import 'package:water_supply_app/util/constants.dart';
 import 'package:water_supply_app/util/functions.dart';
+import 'package:water_supply_app/util/images.dart';
 import 'package:water_supply_app/util/my_colors.dart';
 import 'package:water_supply_app/util/view_function.dart';
 import 'package:water_supply_app/video_player/vlc_video_player.dart';
@@ -39,7 +41,8 @@ class _HomePageState extends State<HomePage> {
         _title = "${user.firstname} ${user.lastname}";
       }
     });
-    _apiContent();
+    // _apiContent();
+    _apiServices();
   }
 
   @override
@@ -90,10 +93,12 @@ class _HomePageState extends State<HomePage> {
           SizedBox(
             height: 10,
           ),
-          _buildMediaView(),
+          // _buildMediaView(),
+          Image.asset(MyImage.logo,fit:BoxFit.contain),
           _buildModuleView(),
           _buildUserModule(),
-          _buildDeliveryModule()
+          _buildDeliveryModule(),
+          Image.asset(MyImage.desc,fit:BoxFit.contain),
           // _buildEnquiryView()
         ],
       ),
@@ -184,7 +189,7 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Text(
-                  "Enquiry",
+                  user != null && user.roleId == roleUser ? "Payment":"Enquiry",
                   style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold),
                 ),
@@ -295,27 +300,31 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _apiContent() {
-    setState(() {
-      _isLoading = true;
-      _status = loader();
-    });
-    ContentRepo.fetchData(onSuccess: (response) {
-      if (response.flag == 1) {
-        _contentData.addAll(response.data);
-        _apiServices();
-      }
-    }, onError: (error) {
-      setState(() {
-        _status = errorView(callBack: () {
-          _apiContent();
-        });
-      });
-      print("Error ====> $error");
-    });
-  }
+  // void _apiContent() {
+  //   setState(() {
+  //     _isLoading = true;
+  //     _status = loader();
+  //   });
+  //   ContentRepo.fetchData(onSuccess: (response) {
+  //     if (response.flag == 1) {
+  //       _contentData.addAll(response.data);
+  //       _apiServices();
+  //     }
+  //   }, onError: (error) {
+  //     setState(() {
+  //       _status = errorView(callBack: () {
+  //         _apiContent();
+  //       });
+  //     });
+  //     print("Error ====> $error");
+  //   });
+  // }
 
   void _apiServices() {
+    setState(() {
+          _isLoading = true;
+          _status = loader();
+        });
     ServicesRepo.fetchData(onSuccess: (response) {
       if (response.flag == 1) {
         _serviceData.addAll(response.data);
@@ -325,7 +334,8 @@ class _HomePageState extends State<HomePage> {
       } else {
         setState(() {
           _status = errorView(callBack: () {
-            _apiContent();
+            // _apiContent();
+            _apiServices();
           });
         });
       }
@@ -333,7 +343,8 @@ class _HomePageState extends State<HomePage> {
       print("get service api error ===> $error");
       setState(() {
         _status = errorView(callBack: () {
-          _apiContent();
+          // _apiContent();
+          _apiServices();
         });
       });
     });
@@ -364,13 +375,18 @@ class _HomePageState extends State<HomePage> {
   // }
 
   void _onEnquiryTap() {
-    Navigator.push(context,
-            MaterialPageRoute(builder: (BuildContext context) => EnquiryPage()))
-        .then((value) {
-      if (value != null && value) {
-        showDialog(context: context, builder: (context) => EnquiryDialog());
-      }
-    });
+    if(user != null && user.roleId == roleUser){
+      Navigator.push(context,
+          MaterialPageRoute(builder: (BuildContext context) => PaymentPage()));
+    }else{
+      Navigator.push(context,
+          MaterialPageRoute(builder: (BuildContext context) => EnquiryPage()))
+          .then((value) {
+        if (value != null && value) {
+          showDialog(context: context, builder: (context) => EnquiryDialog());
+        }
+      });
+    }
   }
 
   void _onModuleTap(String title) {
