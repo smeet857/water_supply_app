@@ -333,7 +333,9 @@ class _HomePageState extends State<HomePage> {
         });
       } else {
         setState(() {
-          _status = errorView(callBack: () {
+          _status = errorView(
+            title: response.message,
+              callBack: () {
             // _apiContent();
             _apiServices();
           });
