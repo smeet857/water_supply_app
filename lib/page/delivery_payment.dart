@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:water_supply_app/model/society_model.dart';
 import 'package:water_supply_app/model/user.dart';
 import 'package:water_supply_app/model/zone_details.dart';
+import 'package:water_supply_app/repo/get_customer_by_society_repo.dart';
 import 'package:water_supply_app/repo/get_customer_by_zone_repo.dart';
 import 'package:water_supply_app/repo/get_order_rate_by_customer.dart';
 import 'package:water_supply_app/repo/get_society_by_zone_id_repo.dart';
@@ -32,11 +33,21 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
   ZoneDetails _selectedZone;
   User selectedCustomer;
   SocietyModel selectedSociety;
+  String selectedPaymentType;
 
 
   List<ZoneDetails> zones = [];
   List<SocietyModel> societyList = [];
   List<User> customers = [];
+  List<String> paymentType = [
+    "Cash",
+    "Cheque",
+    "Paytm",
+    "GPay",
+    "Phonepe",
+    "Internet Banking",
+    "Other"
+  ];
 
   bool isLoading = true;
   Widget status = loader();
@@ -95,6 +106,10 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
                 _buildDropdownTextField("Society"),
                 SizedBox(height: 10,),
                 _buildDropdownTextField("Customer"),
+                SizedBox(height: 10,),
+                customerDetails(),
+                SizedBox(height: 10,),
+                _buildDropdownTextField("Payment Type"),
                 SizedBox(height: 10,),
                 _buildTextField("Due Amount", _dueController),
                 SizedBox(height: 10,),
@@ -156,6 +171,82 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
     );
   }
 
+  Widget customerDetails() {
+    return Visibility(
+      visible: selectedCustomer != null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Customer Details",
+            style:
+            TextStyle(color: Mycolor.accent, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          Container(
+            padding: EdgeInsets.all(15),
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: Mycolor.accent)),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                        flex: 2,
+                        child: Text(
+                          "Address",
+                          style: TextStyle(color: Mycolor.accent, fontSize: 15),
+                        )),
+                    Expanded(
+                        child: Text(
+                          ":",
+                          style: TextStyle(color: Mycolor.accent, fontSize: 15,fontWeight: FontWeight.bold),
+                        )),
+                    Expanded(
+                        flex: 4,
+                        child: Text(
+                          selectedCustomer == null ? "" : selectedCustomer.address1,
+                          style: TextStyle(color: Colors.black, fontSize: 15),
+                        )),
+                  ],
+                ),
+                SizedBox(height: 10,),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                        flex: 2,
+                        child: Text(
+                          "Mobile No",
+                          style: TextStyle(color: Mycolor.accent, fontSize: 15),
+                        )),
+                    Expanded(
+
+                        child: Text(
+                          ":",
+                          style: TextStyle(color: Mycolor.accent, fontSize: 15,fontWeight: FontWeight.bold),
+                        )),
+                    Expanded(
+                        flex: 4,
+                        child: Text(
+                          selectedCustomer == null ? "" : selectedCustomer.phone,
+                          style: TextStyle(color: Colors.black, fontSize: 15),
+                        )),
+                  ],
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
   Widget _buildDropdownTextField(String title) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,14 +254,16 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
         Text(title, style: TextStyle(color: Mycolor.accent,fontWeight: FontWeight.bold),),
         SizedBox(height: 10,),
         DropdownButtonFormField(
-          value: title == "Zones" ? _selectedZone : title == "Society" ? selectedSociety :selectedCustomer,
+          value: title == "Zones" ? _selectedZone : title == "Society" ? selectedSociety : title == "Customer" ? selectedCustomer : selectedPaymentType,
           hint: Text("Select $title"),
           items: title == "Zones" ? zones.map((e){
             return DropdownMenuItem(child:Text(e.title),value: e,);
           }).toList() :title == "Society" ? societyList.map((e){
             return DropdownMenuItem(child:Text(e.name),value: e,);
-          }).toList() : customers.map((e){
+          }).toList() : title == "Customer" ? customers.map((e){
             return DropdownMenuItem(child:Text("${e.firstname} ${e.lastname}"),value: e,);
+          }).toList() : paymentType.map((e){
+            return DropdownMenuItem(child:Text(e),value: e,);
           }).toList(),
           onChanged: (value){
             if(title == "Zones"){
@@ -183,10 +276,14 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
                 selectedSociety = value;
               });
               _apiGetCustomer();
-            }else{
+            }else if(title == "Customer"){
               setState(() {
                 selectedCustomer = value;
                 _dueController.text = selectedCustomer.dueAmount;
+              });
+            }else{
+              setState(() {
+                selectedPaymentType = value;
               });
             }
           },
@@ -199,9 +296,13 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
               if(value == null){
                 return "Select Society";
               }
-            }else{
+            }else if(title == "Customer"){
               if(value == null || value == ""){
                 return "Select Customer";
+              }
+            }else{
+              if(value == null || value == ""){
+                return "Select Payment Type";
               }
             }
             return null;
@@ -230,8 +331,8 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
     selectedCustomer = null;
     showProgress(context);
 
-    GetCustomerByZoneRepo.fetchData(
-        zoneId: _selectedZone.id,
+    GetCustomerBySocietyRepo.fetchData(
+        society_id: selectedSociety.id,
         onSuccess: (object) {
           if (object.data != {}) {
             customers = List.from(object.data);
@@ -264,6 +365,9 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
   void _apiGetSociety(){
     societyList.clear();
     selectedSociety = null;
+    customers.clear();
+    selectedCustomer = null;
+    _dueController.text = "0";
     showProgress(context);
 
     GetSocietyByZoneIdRepo.fetchData(
@@ -333,7 +437,7 @@ class _DeliveryPaymentState extends State<DeliveryPayment> {
     UpdateUserDueAmountRepo.fetchData(
         buyerId: selectedCustomer.id,
         payAmount: _payController.text,
-        paymentMode: "cash",
+        paymentMode: selectedPaymentType,
         paymentNote: _descriptionController.text,
         onSuccess: (object) {
           Navigator.pop(context);

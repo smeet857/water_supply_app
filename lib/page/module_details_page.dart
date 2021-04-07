@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:water_supply_app/model/services.dart';
+import 'package:water_supply_app/widget/image_network_widget.dart';
 
 class ModuleDetailsPage extends StatelessWidget {
   final String title;
@@ -17,32 +18,17 @@ class ModuleDetailsPage extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
+          physics: BouncingScrollPhysics(),
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(5),
-              child: Image.network(
-                service.serviceImg,
+              child: ImageNetWorkWidget(
+                url: service.serviceImg,
                 height: 200,
                 width: double.infinity,
-                fit: BoxFit.cover,
-                loadingBuilder: (c,w,i){
-                  if (i == null)
-                           return w;
-                         return Container(
-                           height: 200,
-                           child: Center(
-                             child: CircularProgressIndicator(
-                               backgroundColor: Colors.grey,
-                               value: i.expectedTotalBytes != null
-                                   ? i.cumulativeBytesLoaded / i.expectedTotalBytes
-                                   : null,
-                             ),
-                           ),
-                         );
-                },
-              ),
+                boxFit: BoxFit.cover,
+              )
             ),
             SizedBox(
               height: 10,
@@ -51,7 +37,8 @@ class ModuleDetailsPage extends StatelessWidget {
               "About : ${service.notes}",
               textAlign: TextAlign.justify,
               style: TextStyle(color: Colors.black,fontWeight: FontWeight.w500),
-            )
+            ),
+            SizedBox(height: 30,),
           ],
         ),
       ),

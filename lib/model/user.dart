@@ -38,7 +38,7 @@ class User {
         this.password,
         this.email,
         this.roleId,
-        this.address1,
+        this.address1 = "",
         this.address2,
         this.city,
         this.state,
