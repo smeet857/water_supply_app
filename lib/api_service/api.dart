@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart';
 
 class Api {
-  String baseUrl = "https://watersupplier.allianzcloud.com/api/users/";
+  String baseUrl = "http://admin.jeelaqua.in/api/users/";
 
   void getCall({
     @required String url,

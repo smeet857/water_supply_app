@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
 import 'package:water_supply_app/dialog/enquiry_dialog.dart';
 import 'package:water_supply_app/model/content.dart';
 import 'package:water_supply_app/model/services.dart';
@@ -105,17 +104,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMediaView() {
-    if(_contentData.length == 0) return Image.asset(MyImage.logo,fit:BoxFit.contain);
-    return SizedBox(
-      height: 200,
-      child:
-      PageView.builder(
-        itemBuilder: (BuildContext context, int index) {
-          return _buildMediaPage(index, _contentData[index]);
-        },
-        itemCount: _contentData.length,
-      ),
-    );
+    /*if(_contentData.length == 0)*/ return Image.asset(MyImage.logo,fit:BoxFit.contain);
+    // return SizedBox(
+    //   height: 200,
+    //   child:
+    //   PageView.builder(
+    //     itemBuilder: (BuildContext context, int index) {
+    //       return _buildMediaPage(index, _contentData[index]);
+    //     },
+    //     itemCount: _contentData.length,
+    //   ),
+    // );
   }
 
   Widget _buildDeliveryModule() {
@@ -248,7 +247,7 @@ class _HomePageState extends State<HomePage> {
           border: Border.all(color: Colors.blue, width: 2)),
       child: ClipRRect(
           borderRadius: BorderRadius.circular(5),
-          child: content.type == "image" ? ImageNetWorkWidget(
+          child: content.type == "other" ? ImageNetWorkWidget(
             url: content.fileUpload,
             height: 200,
             width: double.infinity,

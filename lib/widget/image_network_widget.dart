@@ -30,6 +30,11 @@ class ImageNetWorkWidget extends StatelessWidget {
           ),
         );
       },
+      errorBuilder: (context, url, error) => SizedBox(
+        height: height,
+          child: Center(
+              child: Icon(
+                Icons.error,color: Colors.red,))),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:water_supply_app/calendar/meeting.dart';
 import 'package:water_supply_app/calendar/meeting_data_source.dart';
@@ -39,13 +40,13 @@ class _UserPageState extends State<UserPage> {
         child: SfCalendar(
           onTap: (details){
             if(details.targetElement == CalendarElement.appointment){
-              var od = _getOrderDeliveryFromArray(details.appointments.first.orderId);
+              var od = _getOrderDeliveryFromArray(details.appointments.first.from);
               Navigator.push(context, MaterialPageRoute(builder: (context) => OrderDetailsPage(orderDelivery: od,)));
             }
           },
           view: CalendarView.month,
           appointmentBuilder: (c,cad){
-            var od = _getOrderDeliveryFromArray(cad.appointments.first.orderId);
+            var od = _getOrderDeliveryFromArray(cad.appointments.first.from);
             var m = cad.appointments.first;
             return Container(
               padding: EdgeInsets.symmetric(horizontal: 5),
@@ -54,7 +55,7 @@ class _UserPageState extends State<UserPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Product : ${od.serviceName}",style: TextStyle(color: Colors.white,fontSize: 13,fontWeight: FontWeight.bold),),
+                  Text("Product : ${od.serviceName}       Quantity : ${od.qtyOrdered}",style: TextStyle(color: Colors.white,fontSize: 13,fontWeight: FontWeight.bold),),
                   SizedBox(height: 5,),
                   Text("Total Amount : ${od.totalAmount}",style: TextStyle(color: Colors.white,fontSize: 13,fontWeight: FontWeight.bold),)
                 ],
@@ -85,6 +86,9 @@ class _UserPageState extends State<UserPage> {
 
             orders.forEach((ord) {
               ord.orderDelivery.forEach((delivery) {
+                print("date : ${delivery.deliveryDate}");
+                print("total amount : ${delivery.totalAmount}");
+                print("quantity order : ${delivery.qtyOrdered}");
                 delivery.serviceName = ord.service.title;
                 deliverOrder.add(delivery);
                 meetings.add(Meeting(
@@ -126,11 +130,13 @@ class _UserPageState extends State<UserPage> {
         });
 
   }
-  OrderDelivery _getOrderDeliveryFromArray(String orderId){
+  OrderDelivery _getOrderDeliveryFromArray(DateTime date){
     OrderDelivery orderDelivery;
     for(int i =0 ;i< deliverOrder.length ; i++){
-      if(orderId == deliverOrder[i].orderId){
+      var _date = DateFormat("yyyy-MM-dd").format(date);
+      if(_date == deliverOrder[i].deliveryDate){
         orderDelivery = deliverOrder[i];
+        break;
       }
     }
     return orderDelivery;

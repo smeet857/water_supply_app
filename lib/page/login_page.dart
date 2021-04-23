@@ -86,9 +86,9 @@ class _LoginPageState extends State<LoginPage> {
               case "Mobile No":
                 if (value.isEmpty) {
                   return "Cannot be empty";
-                } else if (value.length < 10) {
+                } /*else if (value.length < 10) {
                   return "Mobile number is not valid";
-                }
+                }*/
                 return null;
               case "Password":
                 if (value.isEmpty) {

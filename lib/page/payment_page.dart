@@ -19,8 +19,8 @@ class _PaymentPageState extends State<PaymentPage> {
 
   List<PaymentHistory> listPaymentHistory = [];
 
-  int totalAmount = 0;
-  int dueAmount = 0;
+  int totalAmount = int.parse(user.totalAmount);
+  int dueAmount = int.parse(user.dueAmount);
 
   @override
   void initState() {
